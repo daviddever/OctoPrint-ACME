@@ -1,0 +1,19 @@
+#settings_plugin_acme .pre-scrollable {
+    background-color: #1a1a2e;
+    color: #e0e0e0;
+    padding: 10px;
+    border-radius: 4px;
+    font-family: monospace;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+#settings_plugin_acme h4 {
+    margin-top: 15px;
+    margin-bottom: 10px;
+}
+
+#settings_plugin_acme .label {
+    font-size: 12px;
+    padding: 4px 8px;
+}

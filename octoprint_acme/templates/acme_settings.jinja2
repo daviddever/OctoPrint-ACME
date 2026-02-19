@@ -1,0 +1,191 @@
+<div id="settings_plugin_acme">
+
+    <!-- Help / Prerequisites -->
+    <div class="alert alert-info">
+        <strong>Prerequisites:</strong>
+        <ol style="margin-bottom: 0;">
+            <li>Register a domain name and create a <strong>DNS A record</strong> pointing to your OctoPi's IP address
+                (private IPs like 192.168.x.x are fine &mdash; DNS-01 validation does not require inbound connections).</li>
+            <li>Create a <strong>Cloudflare API token</strong> at
+                <a href="https://dash.cloudflare.com/profile/api-tokens" target="_blank" rel="noopener">dash.cloudflare.com/profile/api-tokens</a>
+                with <strong>Zone &rarr; DNS &rarr; Edit</strong> permission for the zone containing your domain.</li>
+        </ol>
+    </div>
+
+    <!-- Certificate Status -->
+    <h4>Certificate Status</h4>
+    <div class="control-group" data-bind="visible: certInstalled()">
+        <span class="label" data-bind="css: certStatusClass()">
+            <span data-bind="text: certDaysRemaining() + ' days remaining'"></span>
+        </span>
+        &nbsp;
+        <strong data-bind="text: certFqdn()"></strong>
+        <br>
+        <small>
+            Expires: <span data-bind="text: certExpiry()"></span>
+            &mdash; Issuer: <span data-bind="text: certIssuer()"></span>
+        </small>
+    </div>
+    <div class="control-group" data-bind="visible: !certInstalled()">
+        <span class="label">No certificate</span>
+    </div>
+
+    <hr>
+
+    <!-- Configuration -->
+    <h4>Configuration</h4>
+
+    <div class="control-group">
+        <label class="control-label">FQDN (Domain Name)</label>
+        <div class="controls">
+            <div class="input-append">
+                <input type="text" class="input-xlarge" data-bind="value: fqdn" placeholder="octoprint.example.com">
+                <button class="btn" data-bind="click: validateFqdn, enable: fqdn() && !working()">
+                    <i class="fas fa-check"></i> Validate
+                </button>
+            </div>
+            <!-- ko if: validationResult() -->
+            <span class="help-block">
+                <!-- ko if: validationResult().valid -->
+                <span class="text-success">
+                    <i class="fas fa-check-circle"></i> Resolves to <span data-bind="text: validationResult().ip"></span>
+                </span>
+                <!-- /ko -->
+                <!-- ko ifnot: validationResult().valid -->
+                <span class="text-error">
+                    <i class="fas fa-exclamation-circle"></i> <span data-bind="text: validationResult().error"></span>
+                </span>
+                <!-- /ko -->
+            </span>
+            <!-- /ko -->
+            <!-- ko if: validationResult() && validationResult().warnings -->
+            <!-- ko foreach: validationResult().warnings -->
+            <span class="help-block text-warning">
+                <i class="fas fa-exclamation-triangle"></i> <span data-bind="text: $data"></span>
+            </span>
+            <!-- /ko -->
+            <!-- /ko -->
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label">Email Address</label>
+        <div class="controls">
+            <input type="email" class="input-xlarge" data-bind="value: email" placeholder="you@example.com">
+            <span class="help-block">Used for Let's Encrypt registration and certificate expiry notifications.</span>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label">Cloudflare API Token</label>
+        <div class="controls">
+            <input type="password" class="input-xlarge" data-bind="value: cloudflareToken" placeholder="Enter API token...">
+            <span class="help-block" data-bind="visible: tokenSet() && !cloudflareToken()">
+                <i class="fas fa-check-circle text-success"></i> Token is saved.
+                Enter a new value to replace it, or leave blank to keep the current token.
+            </span>
+            <span class="help-block">
+                Requires <strong>Zone &rarr; DNS &rarr; Edit</strong> permission.
+                The token is stored securely and never exposed via the API.
+            </span>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <div class="controls">
+            <button class="btn btn-primary" data-bind="click: saveConfig, enable: canSave()">
+                <i class="fas fa-save"></i> Save Configuration
+            </button>
+        </div>
+    </div>
+
+    <hr>
+
+    <!-- lego Binary -->
+    <h4>ACME Client (lego)</h4>
+    <div class="control-group">
+        <div class="controls">
+            <span data-bind="visible: legoInstalled()">
+                <i class="fas fa-check-circle text-success"></i>
+                lego <span data-bind="text: legoVersion()"></span> installed
+            </span>
+            <span data-bind="visible: !legoInstalled()">
+                <i class="fas fa-exclamation-circle text-error"></i>
+                lego not installed
+            </span>
+            &nbsp;
+            <button class="btn btn-small" data-bind="click: installLego, enable: !working()">
+                <i class="fas fa-download"></i>
+                <span data-bind="text: legoInstalled() ? 'Reinstall' : 'Install'"></span> lego
+            </button>
+        </div>
+    </div>
+
+    <hr>
+
+    <!-- Certificate Actions -->
+    <h4>Certificate Actions</h4>
+    <div class="control-group">
+        <div class="controls">
+            <div class="btn-group">
+                <button class="btn" data-bind="click: dryRun, enable: canIssue()">
+                    <i class="fas fa-flask"></i> Test (Dry Run)
+                </button>
+                <button class="btn btn-primary" data-bind="click: issueCert, enable: canIssue()">
+                    <i class="fas fa-certificate"></i> Issue Certificate
+                </button>
+                <button class="btn" data-bind="click: renewCert, enable: canRenew()">
+                    <i class="fas fa-sync-alt"></i> Force Renew
+                </button>
+            </div>
+            <span class="help-block">
+                Use "Test (Dry Run)" first to verify everything works with the Let's Encrypt staging server
+                before issuing a real certificate.
+            </span>
+        </div>
+    </div>
+
+    <hr>
+
+    <!-- haproxy Configuration -->
+    <h4>HTTPS (haproxy)</h4>
+    <div class="control-group">
+        <div class="controls">
+            <span data-bind="visible: haproxySslEnabled()">
+                <i class="fas fa-lock text-success"></i> HTTPS is configured in haproxy
+            </span>
+            <span data-bind="visible: !haproxySslEnabled()">
+                <i class="fas fa-lock-open"></i> HTTPS is not yet configured
+            </span>
+        </div>
+    </div>
+    <div class="control-group">
+        <div class="controls">
+            <button class="btn btn-warning" data-bind="click: configureHaproxy, enable: canConfigureHaproxy()">
+                <i class="fas fa-cog"></i> Configure haproxy &amp; Enable HTTPS
+            </button>
+            <span class="help-block">
+                Generates a setup script in <code>~/.octoprint/acme/</code>.
+                Run it via SSH with <code>sudo</code> to apply the changes — the Activity Log will show the exact command.
+            </span>
+        </div>
+    </div>
+
+    <hr>
+
+    <!-- Log Output -->
+    <h4>
+        Activity Log
+        <span class="label label-info" data-bind="visible: working()">
+            <i class="fas fa-spinner fa-spin"></i>
+            <span data-bind="text: workingMessage()"></span>
+        </span>
+    </h4>
+    <pre class="pre-scrollable" style="max-height: 300px; font-size: 12px;"
+         data-bind="foreach: logOutput"><span data-bind="text: $data"></span>
+</pre>
+    <button class="btn btn-small" data-bind="click: clearLog, visible: logOutput().length > 0">
+        <i class="fas fa-eraser"></i> Clear Log
+    </button>
+
+</div>
