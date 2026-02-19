@@ -41,13 +41,13 @@ This plugin is designed for standard OctoPi images where haproxy sits in front o
 Install via the OctoPrint Plugin Manager using this URL:
 
 ```
-https://github.com/daviddever/OctoPrint-ACME/archive/main.zip
+https://github.com/daviddever/OctoPrint-ACME/releases/latest/download/OctoPrint-ACME.zip
 ```
 
 Or install manually in OctoPrint's Python environment:
 
 ```bash
-pip install https://github.com/daviddever/OctoPrint-ACME/archive/main.zip
+pip install https://github.com/daviddever/OctoPrint-ACME/releases/latest/download/OctoPrint-ACME.zip
 ```
 
 Then restart OctoPrint.
